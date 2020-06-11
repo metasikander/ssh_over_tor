@@ -1,0 +1,18 @@
+---
+# handlers file for ssh_over_tor
+- name: restart ssh server
+  systemd:
+    name: sshd
+    state: restarted
+    enabled: true
+
+- name: enable ufw
+  ufw:
+    state: enabled
+    policy: deny
+
+- name: enable firewalld
+  systemd:
+    name: firewalld
+    state: started
+    enabled: true

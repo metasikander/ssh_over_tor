@@ -1,0 +1,63 @@
+---
+# tasks file for ssh_over_tor on CentOS
+- name: Install ssh server
+  package:
+    name: openssh-server
+    state: latest
+  notify:
+    - restart ssh server
+
+- name: Install firewalld
+  package:
+    name: firewalld
+    state: present
+  notify:
+    - enable firewalld
+
+- name: Allow ssh and onion trafic
+  firewalld:
+    port: "{{ item }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop:
+    - 22
+    - 9050
+
+# Required to get libzstd (remove when no longer nescecary)
+- name: Setup ELRepo
+  dnf:
+    name: elrepo-release
+    state: installed
+
+- name: Install TOR
+  package:
+    name: tor
+    enablerepo: elrepo-testing # Same as last play
+    state: latest
+
+- name: Start and enable tor
+  systemd:
+    name: tor
+    state: started
+    enabled: true
+
+- name: Configure TOR for ssh routing
+  blockinfile:
+    path: /etc/tor/torrc
+    block: |
+      HiddenServiceDir /var/lib/tor/other_hidden_service/
+      HiddenServicePort 22
+
+- name: Restart TOR
+  systemd:
+    name: tor
+    state: restarted
+
+- name: Print onion address
+  slurp:
+    src: /var/lib/tor/other_hidden_service/hostname
+  register: onion
+
+- debug:
+    msg: "{{ onion['content'] | b64decode }}"

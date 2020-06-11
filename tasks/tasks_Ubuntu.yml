@@ -1,0 +1,55 @@
+---
+# tasks file for ssh_over_tor on Ubuntu
+- name: Install ssh server
+  package:
+    name: openssh-server
+    state: latest
+  notify:
+    - restart ssh server
+
+- name: Install ufw
+  package:
+    name: ufw
+    state: present
+  notify:
+    - enable ufw
+
+- name: Allow ssh and onion trafic
+  ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop:
+    - 22
+    - 9050
+
+- name: Install TOR
+  package:
+    name: tor
+    state: latest
+
+- name: Start and enable tor
+  systemd:
+    name: tor
+    state: started
+    enabled: true
+
+- name: Configure TOR for ssh routing
+  blockinfile:
+    path: /etc/tor/torrc
+    block: |
+      HiddenServiceDir /var/lib/tor/other_hidden_service/
+      HiddenServicePort 22
+
+- name: Restart tor
+  systemd:
+    name: tor
+    state: restarted
+
+- name: Print onion address
+  slurp:
+    src: /var/lib/tor/other_hidden_service/hostname
+  register: onion
+
+- debug:
+    msg: "{{ onion['content'] | b64decode }}"
