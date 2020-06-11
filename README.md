@@ -3,7 +3,8 @@ An ansible role to set up ssh server over the onion router (tor)
 
 # Disclamer
 This role was created without any considerations on best practices or any form of hardening of the system.  
-Use at your own discretion.
+Use at your own discretion.  
+So far only tested on Ubuntu 20.04 and CentOS 8.
 
 # What it does
 This role will make sure that ssh server is installed and running.  
